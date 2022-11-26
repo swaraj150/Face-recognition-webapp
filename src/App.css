@@ -1,0 +1,21 @@
+.display-flex{
+  display: flex;
+  
+}
+
+.justify-content-center{
+  justify-content: center;
+}
+
+.position-absolute{
+  position: absolute;
+}
+
+.margin{
+  margin-top: 10px;
+}
+
+
+#btn1{
+  margin-right: 15px;
+}

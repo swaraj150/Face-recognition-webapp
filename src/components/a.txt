@@ -1,0 +1,288 @@
+video
+
+import React, { useEffect, useRef,useContext } from 'react'
+import * as faceapi from 'face-api.js';
+import TextContext from '../context/textContext';
+// import { useBetween } from 'use-between';
+
+const Video=()=> {
+    const videoRef=useRef(null)
+    const canvasRef=useRef(null)
+    const a=useContext(TextContext)
+
+    useEffect(()=>{
+        const loadmodels=async()=>{
+         
+            Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('./models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('./models'),
+                faceapi.nets.ssdMobilenetv1.loadFromUri('./models')
+
+            ]).then(handleplay);
+        }
+      loadmodels();  
+    },[])
+    
+    const handleplay=()=>{
+      navigator.mediaDevices
+          .getUserMedia({video:{width:520, height:520}})
+          .then(stream=>{
+              let video=videoRef.current;
+              video.srcObject=stream;
+              video.play();
+              
+
+          })
+          .catch(err=>{
+              console.error(err);
+          })
+
+        
+    }
+
+    const handleonplay=async ()=>{
+      const labeledDescriptors=await loadLabledImages()
+      console.log(labeledDescriptors);
+      const faceMatcher=new faceapi.FaceMatcher(labeledDescriptors,0.7);
+
+      setInterval(async ()=>{
+        
+        canvasRef.current.innerHTML=faceapi.createCanvasFromMedia(videoRef.current)
+          const displaySize={
+            width: 520,
+            height: 520
+          }
+          faceapi.matchDimensions(canvasRef.current,displaySize);
+          const detections=await faceapi.detectAllFaces(videoRef.current,new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions().withFaceDescriptors();
+          const resizedDetections=faceapi.resizeResults(detections,displaySize);
+          canvasRef.current.getContext("2d",{willReadFrequently:true}).getImageData(0,0,520,520);
+          //https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getimagedata
+          
+          
+          const results=resizedDetections.map((d)=>{
+            return faceMatcher.findBestMatch(d.descriptor)
+          })
+          const students=['Sangita Andhale','Swaraj Andhale (0.49)','Sanjana Andhale'];
+          const present=results.map(label=>{
+            return label.toString();
+          })
+          // console.log(present)
+          present.forEach((label,i)=>{
+            // if(label=='Swaraj Andhale (0.49)'){
+            //   console.log(true);
+            // }
+            console.log(i)
+            // // console.log(label) => gives swaraj andhale (0.45)
+            //  console.log(label.toString) 
+
+          })
+          
+          
+          results.map((result,i)=>{
+            const box=resizedDetections[i].detection.box;
+            const drawBox=new faceapi.draw.DrawBox(box,{label:result.toString()});
+            drawBox.draw(canvasRef.current);
+          })
+
+          
+          // faceapi.draw.drawDetections(canvasRef.current,resizedDetections);
+          // faceapi.draw.drawFaceLandmarks(canvasRef.current,resizedDetections);
+          faceapi.draw.drawFaceExpressions(canvasRef.current,resizedDetections);
+          
+         
+          
+        },100)
+      }
+      
+    const loadLabledImages=()=>{
+        const labels=['Swaraj Andhale','Sangita Andhale'];
+        return Promise.all(
+          labels.map(async (label)=>{
+            const descriptions =[];
+            for (let i=1;i<=3;i++){
+              const img=await faceapi.fetchImage(`../labeled_images/${label}/${i}.jpg`);
+              const detections=await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor().withFaceExpressions();
+              console.log(label + i + JSON.stringify(detections));
+              descriptions.push(detections.descriptor);
+
+            }
+            return new faceapi.LabeledFaceDescriptors(label,descriptions);
+          })
+        )
+      }  
+  
+    return (
+    <div className="display-flex justify-content-center margin ">
+            <video ref={videoRef} onPlay={handleonplay}></video>
+            <canvas ref={canvasRef} className="position-absolute" />          
+    </div>
+  )
+}
+
+
+export default Video
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+attendence
+
+import React,{useState,useContext, useEffect} from 'react'
+import TextContext from '../context/textContext'
+
+
+export default function Attendence() {
+    const a=useContext(TextContext);
+
+    const students=['Swaraj Andhale','Sangita Andhale','Sanjana Andhale'];
+    
+    return (
+    <>
+    <table className="table">
+    <thead>
+        <tr>
+        <th scope="col">#</th>
+        <th scope="col">Name</th>
+        <th scope="col">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {students.map((student,index)=>(
+            <tr>
+            <th scope="row">{index+1}</th>
+            <td>{student}</td>
+            <td>{a.state}</td>
+            </tr>
+
+        ))}
+    </tbody>
+    </table> 
+    
+    </>
+    
+    
+    )
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+navbar
+
+import React from 'react'
+import PropTypes from 'prop-types'
+
+export default function Navbar(props) {
+  return (
+    <nav className="navbar navbar-expand-lg bg-light">
+  <div className="container-fluid">
+    <a className="navbar-brand" href="#">{props.title}</a>
+    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span className="navbar-toggler-icon"></span>
+    </button>
+    <div className="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+        <li className="nav-item">
+          <a className="nav-link active" aria-current="page" href="/">Home</a>
+        </li>
+        <li className="nav-item">
+          <a className="nav-link" href="/">{props.aboutText}</a>
+        </li>
+        
+        
+      </ul>
+      <form className="d-flex" role="search">
+        <input className="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+        <button className="btn btn-outline-success" type="submit">Search</button>
+      </form>
+    </div>
+  </div>
+</nav>
+  )
+}
+
+Navbar.propTypes={title:PropTypes.string,aboutText:PropTypes.string}// just a precautionary check that title should be as string and not a number or an object
+
+
+Navbar.defaultProps={
+    title:"Set Title here",
+    aboutText: "About"
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+textContext
+
+import { createContext } from "react";
+const TextContext = createContext();
+export default TextContext;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+app.js
+
+import './App.css';
+import Navbar from './components/Navbar';
+import Video from './components/Video';
+import {Routes,Route,useNavigate} from 'react-router-dom';
+import Attendence from './components/Attendence';
+import TextState from './context/textState';
+
+import React from 'react'
+function App() {
+  
+  const navigate=useNavigate();
+  const navigateVideo=()=>{
+    navigate('/')
+  }
+  const navigateAttendence=()=>{
+    navigate('/attendence')
+  }
+
+
+  return (
+    <>
+    <TextState>
+      <Navbar title="FaceRecWeb" aboutText="About us"/>
+      
+      <Routes>
+        <Route exact path='/' element={<Video/>}/>
+        <Route path='/attendence' element={<Attendence/>}/>
+    
+      </Routes>
+      <div className="display-flex justify-content-center margin ">
+        <button type='button'className="btn btn-success" id='btn1' onClick={navigateVideo}>Home</button>
+        <button type='button'className="btn btn-success" onClick={navigateAttendence}>View Attendence</button>   
+      </div>
+    </TextState>
+      
+   
+    </>
+
+  );
+}
+
+export default App;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+app.css
+.display-flex{
+  display: flex;
+  
+}
+
+.justify-content-center{
+  justify-content: center;
+}
+
+.position-absolute{
+  position: absolute;
+}
+
+.margin{
+  margin-top: 10px;
+}
+
+
+#btn1{
+  margin-right: 15px;
+}
+///////////////////////////////////////////////////////////////////////////////////////
+
