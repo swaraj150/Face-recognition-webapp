@@ -10,7 +10,7 @@ const bcrypt=require("bcryptjs");
 const fetchuser=require("../middleware/fetchuser");
 const JWT_SECRET="Swaraj$andhale@19";
 
-router.post("/getstudent",async(req,res)=>{
+router.post("/getstudent",async(req,res)=>{ // Get the student by his name using post request
     let success=false;
     try {
         const {name}=req.body;
@@ -28,7 +28,7 @@ router.post("/getstudent",async(req,res)=>{
         res.status(500).send("Internal Server error") 
     }
 });
-router.post("/addstudent",async(req,res)=>{
+router.post("/addstudent",async(req,res)=>{// add a student to database
     try {
         
         let student=await Student.create({
@@ -46,7 +46,7 @@ router.post("/addstudent",async(req,res)=>{
         res.status(500).send("Internal Server error") 
     }
 });
-router.get("/getallstudents",async(req,res)=>{
+router.get("/getallstudents",async(req,res)=>{// get all the sudents
     try {
         const status=await Student.find();
         res.json(status);
